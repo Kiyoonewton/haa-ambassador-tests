@@ -2,7 +2,7 @@
 
 Updated: 4 November 2026
 
-**37 entries: 27 implemented checks and 10 explicitly skipped placeholders.** Implemented means written, not passed. Standalone live execution still requires the Mac browser installation and a saved login session. No full journey has been certified complete.
+**37 entries: 28 implemented checks and 9 explicitly skipped placeholders.** Implemented means written, not passed. Standalone live execution still requires the Mac browser installation and a saved login session. No full journey has been certified complete.
 
 ## How to run
 
@@ -22,7 +22,7 @@ Use UI mode to select a journey or individual check. For a visible slow run of e
 - Copy-link checks replace the local clipboard.
 - Referral URL visits may increase click counts. They do not prove patient attribution.
 - Language test switches to Spanish, then restores English. Mobile test uses a separate browser context.
-- No messages, patient cases, profile photos, or new accounts are submitted by this suite.
+- No messages, patient cases, or new accounts are submitted. J03-05 uploads a test photo and restores the original.
 - Skipped placeholders remain visible with reasons; they are not implemented coverage.
 
 ## Journey 01 — Join as an ambassador
@@ -58,7 +58,7 @@ Use UI mode to select a journey or individual check. For a visible slow run of e
 | J03-02 Role and text fields accept unsaved edits | Written; live result pending |
 | J03-03 Save city and organization, reopen, then restore | Written; live result pending |
 | J03-04 Cancel discards unsaved edits | Written; live result pending |
-| J03-05 Photo upload and persistence | Skipped — Blocked: no upload control observed; team confirmation needed. |
+| J03-05 Photo upload and persistence | Written; live result pending. Original image backed up before upload and restored afterward. |
 | J03-06 Copy link matches referral URL | Written; live result pending |
 
 ## Journey 04 — Share a personal referral link
@@ -148,3 +148,7 @@ Additional planned checks: saved role persistence, QR saved-image sharing behavi
 - Spanish dashboard showed translated controls and preserved the ambassador name; English was restored.
 - A standalone unauthenticated test launch was attempted here but stopped because the Chromium executable is not installed. This is an environment blocker, not an app failure.
 - Test discovery succeeds for all 37 entries; it does not establish pass/fail results.
+
+## J03-05 photo upload
+
+Clicking the Profile picture opens the file picker. The test generates a PNG fixture in memory, backs up the original image bytes, uploads the fixture, saves if required, and compares the visible image after reopening Profile. Cleanup restores the original bytes and verifies appearance. Original image recovery bytes remain in local test-results only. If the original cannot be downloaded, the test fails before changing it. A forcibly stopped process can prevent restoration; use the saved recovery file to restore manually. Run `npm run demo -- --grep "J03-05"`. Syntax, test discovery, PNG generation and image comparison checks pass; live upload execution remains pending.
