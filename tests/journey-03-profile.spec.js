@@ -64,7 +64,7 @@ const restoreValues=new WeakMap();
 const restorePhotos=new WeakMap();
 test.describe('Journey 03 — Update the ambassador profile',()=>{
  test.beforeEach(async({page},testInfo)=>{
-  testInfo.setTimeout(90000);
+  testInfo.setTimeout(Math.max(testInfo.timeout,90000));
   await openProfile(page);
  });
  test.afterEach(async({page})=>{
@@ -117,22 +117,31 @@ test.describe('Journey 03 — Update the ambassador profile',()=>{
   await page.getByRole('button',exact('Cancel')).click();await openProfile(page);await verify(page,original);
  });
  test('J03-05 Photo upload and persistence',async({page},testInfo)=>{
-  testInfo.setTimeout(120000);
+  testInfo.setTimeout(Math.max(testInfo.timeout,120000));
   const original=await test.step('Back up original photo before editing',async()=>{
    const file=await backupPhoto(page);
    return {file,preview:await photo(page).screenshot()};
   });
   // Keep recovery bytes local to this run; they never enter the repository.
   const recoveryPath=testInfo.outputPath(original.file.name);
-  await import('node:fs/promises').then(fs=>fs.writeFile(recoveryPath,original.file.buffer));
+  await import('node:fs/promises').then(async fs=>{
+   await fs.mkdir(testInfo.outputDir,{recursive:true});
+   await fs.writeFile(recoveryPath,original.file.buffer);
+  });
   restorePhotos.set(page,original);
   const preview=await test.step('Select test image and save if required',async()=>uploadPhoto(page,testPhoto()));
   expect(imageDifference(original.preview,preview),'Test upload must visibly replace the original photo').toBeGreaterThan(0.05);
   await test.step('Reopen profile and verify uploaded photo persists',async()=>{
    await openProfile(page);
-   const source=await photo(page).getAttribute('src');
-   expect(source,'Reopened photo must be server-backed rather than a temporary local preview').not.toMatch(/^(blob:|data:)/);
+   await expect.poll(()=>photo(page).evaluate(img=>img.complete&&img.naturalWidth>0)).toBeTruthy();
    expect(imageDifference(preview,await photo(page).screenshot()),'Reopened photo should match uploaded preview').toBeLessThan(0.05);
+   // A freshly created authenticated context rules out an in-memory preview.
+   const context=await page.context().browser().newContext({storageState:await page.context().storageState({indexedDB:true}),viewport:page.viewportSize()||undefined});
+   try{
+    const fresh=await context.newPage();await openProfile(fresh);
+    await expect.poll(()=>photo(fresh).evaluate(img=>img.complete&&img.naturalWidth>0)).toBeTruthy();
+    expect(imageDifference(preview,await photo(fresh).screenshot()),'Uploaded photo should survive a fresh browser context').toBeLessThan(0.05);
+   }finally{await context.close();}
   });
  });
  test('J03-06 Copy link matches referral URL',async({page,context})=>{
