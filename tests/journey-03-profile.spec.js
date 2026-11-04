@@ -2,7 +2,12 @@ import { test, expect } from '@playwright/test';
 import { openProfile, account, exact } from './support.js';
 const city=p=>p.getByRole('textbox',exact('My city'));
 const org=p=>p.getByRole('textbox',exact('Organization / Affiliation'));
-const read=async p=>({city:await city(p).inputValue(),org:await org(p).inputValue()});
+const read=async p=>p.getByRole('main').evaluate(main=>{
+ const city=main.querySelector('[id="dashboardProfileCity"]');
+ const org=main.querySelector('[id="dashboardProfileOrganization"]');
+ if(!city||!org)throw new Error('Profile fields are missing');
+ return {city:city.value,org:org.value};
+});
 async function typeAndCommit(input,value,label){
  await expect(input,label+' must be editable').toBeEditable();
  await input.click();
@@ -57,7 +62,7 @@ async function save(p,values){
 const restoreValues=new WeakMap();
 test.describe('Journey 03 — Update the ambassador profile',()=>{
  test.beforeEach(async({page},testInfo)=>{
-  if(testInfo.title.startsWith('J03-03'))testInfo.setTimeout(90000);
+  testInfo.setTimeout(90000);
   await openProfile(page);
  });
  test.afterEach(async({page})=>{
