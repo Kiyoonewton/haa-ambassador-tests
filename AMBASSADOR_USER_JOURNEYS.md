@@ -18,7 +18,7 @@ Use UI mode to select a journey or individual check. For a visible slow run of e
 ## Run prerequisites and effects
 
 - Use the dedicated beta ambassador account. One worker runs checks sequentially.
-- J03-03 temporarily saves city and organization, then restores and verifies original values in a finally step. Forced termination can prevent restoration. Saved role persistence is not covered.
+- J03-03 temporarily saves city and organization, then restores and verifies original values in a separate afterEach cleanup hook. Forced termination can prevent restoration. Saved role persistence is not covered.
 - Copy-link checks replace the local clipboard.
 - Referral URL visits may increase click counts. They do not prove patient attribution.
 - Language test switches to Spanish, then restores English. Mobile test uses a separate browser context.
