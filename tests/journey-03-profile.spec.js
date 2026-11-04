@@ -3,7 +3,25 @@ import { openProfile, account, exact } from './support.js';
 const city=p=>p.getByRole('textbox',exact('My city'));
 const org=p=>p.getByRole('textbox',exact('Organization / Affiliation'));
 const read=async p=>({city:await city(p).inputValue(),org:await org(p).inputValue()});
-const fill=async(p,v)=>{await city(p).fill(v.city);await org(p).fill(v.org);};
+async function typeAndCommit(input,value,label){
+ await expect(input,label+' must be editable').toBeEditable();
+ await input.click();
+ await input.press('ControlOrMeta+A');
+ await input.press('Backspace');
+ if(value)await input.pressSequentially(value,{delay:60});
+ await input.press('Tab');
+ await expect(input,label+' reverted before Save was clicked').toHaveValue(value);
+}
+async function fill(p,v){
+ await test.step('Type city and leave the field',async()=>{
+  await typeAndCommit(city(p),v.city,'City');
+ });
+ await test.step('Type organization and leave the field',async()=>{
+  await typeAndCommit(org(p),v.org,'Organization');
+ });
+ // Also check whether editing organization reset the previously entered city.
+ await verify(p,v);
+}
 const verify=async(p,v)=>{await expect(city(p)).toHaveValue(v.city);await expect(org(p)).toHaveValue(v.org);};
 // Match the submitted organization value instead of assuming a specific API URL.
 function containsValue(value, expected) {
@@ -70,10 +88,11 @@ test.describe('Journey 03 — Update the ambassador profile',()=>{
  });
  test('J03-03 Save city and organization, reopen, then restore',async({page})=>{
   const original=await read(page);
-  restoreValues.set(page,original);
   const changed={city:original.city==='Orlando, FL 32801'?'Miami, FL 33101':'Orlando, FL 32801',org:`HAA QA ${Date.now()}`};
   await test.step('Enter changes and submit profile',async()=>{
-   await fill(page,changed);await verify(page,changed);await save(page,changed);
+   await fill(page,changed);await verify(page,changed);
+   restoreValues.set(page,original); // Only schedule restoration when a save is about to be attempted.
+   await save(page,changed);
   });
   await test.step('Reopen profile and verify saved city and organization',async()=>{
    await openProfile(page);await verify(page,changed);
