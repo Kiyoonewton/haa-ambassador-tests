@@ -22,9 +22,11 @@ export async function uploadPhoto(page,file){
  let preview;
  try{
   const previous=await photo(page).getAttribute('src');
-  const chooserPromise=page.waitForEvent('filechooser');
+  const chooserPromise=page.waitForEvent('filechooser',{timeout:15000}).then(chooser=>({chooser}),error=>({error}));
   await photo(page).click();
-  const chooser=await chooserPromise;await chooser.setFiles(file);
+  const result=await chooserPromise;
+  if(result.error)throw new Error('Clicking the profile picture did not open a file picker. Confirm J03-05 manually.',{cause:result.error});
+  await result.chooser.setFiles(file);
   await expect(photo(page),'Selecting a different photo should update its preview').not.toHaveAttribute('src',previous||'');
   await settled(page,tracker);
   preview=await photo(page).screenshot();
@@ -57,6 +59,17 @@ export function imageDifference(before,after){
 export async function backupPhoto(page){
  const src=await photo(page).getAttribute('src');
  if(!src)throw new Error('Cannot back up the original profile photo: missing source.');
+ if(/^(blob:|data:)/.test(src)){
+  const embedded=await photo(page).evaluate(async img=>{
+   const response=await fetch(img.src);if(!response.ok)throw new Error('Unable to read original photo');
+   const blob=await response.blob();const bytes=new Uint8Array(await blob.arrayBuffer());
+   let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+   return {base64:btoa(binary),mimeType:blob.type};
+  });
+  const extension=({'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/svg+xml':'svg','image/gif':'gif'})[embedded.mimeType];
+  if(!extension)throw new Error('Original embedded photo format is unsupported; no image has been changed.');
+  return {name:'original-avatar.'+extension,mimeType:embedded.mimeType,buffer:Buffer.from(embedded.base64,'base64')};
+ }
  const response=await page.request.get(new URL(src,page.url()).href);
  expect(response.ok(),'Original photo must be backed up before changing it').toBeTruthy();
  const mimeType=(response.headers()['content-type']||'').split(';')[0];
