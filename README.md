@@ -30,7 +30,7 @@ UI mode offers journey/test selection, execution and results. `demo` uses a visi
 
 Read **AMBASSADOR_USER_JOURNEYS.md** for the complete journey list, prerequisites, blocked checks and validation evidence. Journey 02 is the original eight-check dashboard batch. Journey 03 covers profile; 04 link; 05 QR; 06 message; 08 language; 09 session; 10 mobile. Journeys 01 and 07 are blocked placeholders, not implemented full flows.
 
-There are 37 entries: 27 implemented checks and 10 skipped placeholders. Live results remain pending your local run. Tests may expose app defects; none are presented as passed merely because code exists.
+There are 37 entries: 28 implemented checks and 9 skipped placeholders. Live results remain pending your local run. Tests may expose app defects; none are presented as passed merely because code exists.
 
 Default account name: Isaac; username: kiyoonewton. Use `HAA_NAME=Jane HAA_USERNAME=janetest npm run demo` for another account. The current locators target the English beta interface; Journey 08 specifically checks Spanish.
 
@@ -43,3 +43,7 @@ Failure screenshots, videos and traces are retained locally; review them for acc
 ## Validation
 
 All 37 entries are discovered successfully. A standalone launch here was blocked by a missing Chromium executable; authenticated execution also requires a local saved session. Connected-browser observations are separately recorded in the journey Markdown file. Run on the Mac before presenting pass/fail results.
+
+## J03-05 photo upload
+
+Clicking the Profile picture opens the file picker. The test generates a PNG fixture in memory, backs up the original image bytes, uploads the fixture, saves if required, and compares the visible image after reopening Profile. Cleanup restores the original bytes and verifies appearance. Original image recovery bytes remain in local test-results only. If the original cannot be downloaded, the test fails before changing it. A forcibly stopped process can prevent restoration; use the saved recovery file to restore manually. Run `npm run demo -- --grep "J03-05"`. Syntax, test discovery, PNG generation and image comparison checks pass; live upload execution remains pending.
