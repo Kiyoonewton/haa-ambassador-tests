@@ -36,7 +36,7 @@ Default account name: Isaac; username: kiyoonewton. Use `HAA_NAME=Jane HAA_USERN
 
 ## Test effects
 
-The profile save test temporarily changes city and organization and restores original values in a finally step. Use a test account and avoid concurrent profile editing. If forcibly terminated, restore the profile manually. Role edits are canceled, not saved. Link visits can increase click counts. Clipboard checks replace clipboard contents. Language is restored to English. No patient submissions or outgoing messages occur.
+The profile save test temporarily changes city and organization and restores original values in a separate afterEach cleanup hook. Use a test account and avoid concurrent profile editing. If forcibly terminated, restore the profile manually. Role edits are canceled, not saved. Link visits can increase click counts. Clipboard checks replace clipboard contents. Language is restored to English. No patient submissions or outgoing messages occur.
 
 Failure screenshots, videos and traces are retained locally; review them for account information before sharing reports. Do not share saved authentication files.
 
