@@ -1,0 +1,1 @@
+{"name":"haa-ambassador-tests","private":true,"type":"module","scripts":{"login":"node scripts/login.mjs","test":"playwright test","demo":"node scripts/demo.mjs","ui":"playwright test --ui","report":"playwright show-report"},"devDependencies":{"@playwright/test":"^1.56.0","jsqr":"^1.4.0","pngjs":"^7.0.0"}}
