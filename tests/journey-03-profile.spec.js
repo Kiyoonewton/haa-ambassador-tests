@@ -1,3 +1,4 @@
+import {testPhoto,photo,uploadPhoto,backupPhoto,imageDifference} from './helpers/profile-photo.js';
 import { test, expect } from '@playwright/test';
 import { openProfile, account, exact } from './support.js';
 const city=p=>p.getByRole('textbox',exact('My city'));
@@ -60,12 +61,20 @@ async function save(p,values){
  }
 }
 const restoreValues=new WeakMap();
+const restorePhotos=new WeakMap();
 test.describe('Journey 03 — Update the ambassador profile',()=>{
  test.beforeEach(async({page},testInfo)=>{
   testInfo.setTimeout(90000);
   await openProfile(page);
  });
  test.afterEach(async({page})=>{
+  const originalPhoto=restorePhotos.get(page);
+  if(originalPhoto){
+   await test.step('Restore original profile photo',async()=>{
+    await openProfile(page);await uploadPhoto(page,originalPhoto.file);await openProfile(page);
+    expect(imageDifference(originalPhoto.preview,await photo(page).screenshot()),'Original photo should be restored').toBeLessThan(0.05);
+   });
+  }
   const original=restoreValues.get(page);
   if(!original)return;
   await test.step('Restore original profile and verify persistence',async()=>{
@@ -107,7 +116,25 @@ test.describe('Journey 03 — Update the ambassador profile',()=>{
   const original=await read(page);await fill(page,{city:'Miami, FL 33101',org:`UNSAVED ${Date.now()}`});
   await page.getByRole('button',exact('Cancel')).click();await openProfile(page);await verify(page,original);
  });
- test.skip('J03-05 Photo upload and persistence',{annotation:{type:'blocked',description:'Blocked: no upload control observed; team confirmation needed.'}},async()=>{});
+ test('J03-05 Photo upload and persistence',async({page},testInfo)=>{
+  testInfo.setTimeout(120000);
+  const original=await test.step('Back up original photo before editing',async()=>{
+   const file=await backupPhoto(page);
+   return {file,preview:await photo(page).screenshot()};
+  });
+  // Keep recovery bytes local to this run; they never enter the repository.
+  const recoveryPath=testInfo.outputPath(original.file.name);
+  await import('node:fs/promises').then(fs=>fs.writeFile(recoveryPath,original.file.buffer));
+  restorePhotos.set(page,original);
+  const preview=await test.step('Select test image and save if required',async()=>uploadPhoto(page,testPhoto()));
+  expect(imageDifference(original.preview,preview),'Test upload must visibly replace the original photo').toBeGreaterThan(0.05);
+  await test.step('Reopen profile and verify uploaded photo persists',async()=>{
+   await openProfile(page);
+   const source=await photo(page).getAttribute('src');
+   expect(source,'Reopened photo must be server-backed rather than a temporary local preview').not.toMatch(/^(blob:|data:)/);
+   expect(imageDifference(preview,await photo(page).screenshot()),'Reopened photo should match uploaded preview').toBeLessThan(0.05);
+  });
+ });
  test('J03-06 Copy link matches referral URL',async({page,context})=>{
   await context.grantPermissions(['clipboard-read','clipboard-write']);
   await page.evaluate(()=>navigator.clipboard.writeText('HAA QA sentinel'));
